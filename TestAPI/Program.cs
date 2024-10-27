@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using TestAPI;
+using TestAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,33 +27,19 @@ if (app.Environment.IsDevelopment())
   app.UseSwagger();
   app.UseSwaggerUI();
 }
-
 app.UseCors("AllowAll");
-
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-  "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
+var weatherForecastService = new WeatherForecastService();
 app.MapGet("/weatherforecast", () =>
   {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-          DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-          Random.Shared.Next(-20, 55),
-          summaries[Random.Shared.Next(summaries.Length)]
-        ))
-      .ToArray();
-    return forecast;
+    var forecast = weatherForecastService.GenerateForecast();
+    return Results.Ok(forecast);
   })
   .WithName("GetWeatherForecast")
   .WithOpenApi();
 
 var gitHubService = new GitHubService();
-
 app.MapGet("/github", async () =>
 {
   using HttpClient client = gitHubService.CreateHttpClient();
@@ -61,8 +48,3 @@ app.MapGet("/github", async () =>
 });
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-  public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
